@@ -7,7 +7,7 @@ import {
   validatePlanes,
   resolveAttack,
 } from './gameEngine';
-import { AttackResult } from '@battleplane/shared';
+import { AttackResult, computePlaneCells } from '@battleplane/shared';
 
 export interface RoomState {
   roomId: RoomId;
@@ -114,6 +114,7 @@ export interface AttackOutcome {
   gameOver: boolean;
   winnerId?: PlayerId;
   nextTurn: PlayerId;
+  planeCells?: [number, number][];
 }
 
 export function processAttack(
@@ -133,14 +134,22 @@ export function processAttack(
   const result = resolveAttack(defender, row, col);
   if (result === 'already_attacked') return { error: 'Cell already attacked' };
 
+  let planeCells: [number, number][] | undefined;
+  if (result === AttackResult.KILL) {
+    const planeIndex = defender.cockpitCells.get(`${row},${col}`);
+    if (planeIndex !== undefined) {
+      planeCells = computePlaneCells(defender.planes[planeIndex]).cells;
+    }
+  }
+
   const gameOver = defender.planesAlive === 0;
   if (gameOver) {
     room.phase = GamePhase.ENDED;
-    return { result, gameOver: true, winnerId: attackerId, nextTurn: attackerId };
+    return { result, gameOver: true, winnerId: attackerId, nextTurn: attackerId, planeCells };
   }
 
   room.currentTurn = defender.playerId;
-  return { result, gameOver: false, nextTurn: defender.playerId };
+  return { result, gameOver: false, nextTurn: defender.playerId, planeCells };
 }
 
 export function removePlayer(socketId: string): { room: RoomState; opponent: PlayerState | null } | null {

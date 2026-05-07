@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { EVENTS, computePlaneCells } from '@battleplane/shared';
+import React, { useEffect, useMemo, useState } from 'react';
+import { EVENTS, AttackResult, computePlaneCells } from '@battleplane/shared';
 import socket from '../socket';
 import { useGameStore } from '../store/gameStore';
 import Board from './Board';
@@ -7,6 +7,7 @@ import Board from './Board';
 export default function BattleScreen() {
   const store = useGameStore();
   const [waiting, setWaiting] = useState(false);
+  const [killToast, setKillToast] = useState(false);
 
   const myPlaneCells = useMemo(() => {
     const cells = new Set<string>();
@@ -24,20 +25,36 @@ export default function BattleScreen() {
   };
 
   // Re-enable clicking after we receive a result
-  React.useEffect(() => {
+  useEffect(() => {
     setWaiting(false);
   }, [store.enemyBoard, store.myBoard]);
+
+  // Show kill toast when last attack is a KILL
+  useEffect(() => {
+    if (store.lastAttack?.result === AttackResult.KILL) {
+      setKillToast(true);
+      const t = setTimeout(() => setKillToast(false), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [store.lastAttack]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <h2 className="text-2xl font-bold text-cyan-400 mb-2">Battle!</h2>
 
-      <div className={`mb-4 px-4 py-2 rounded-lg text-sm font-semibold ${
+      <div className={`mb-3 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
         store.isMyTurn
           ? 'bg-cyan-500/20 border border-cyan-500 text-cyan-300'
           : 'bg-slate-700 border border-slate-600 text-slate-400'
       }`}>
         {store.isMyTurn ? '⚡ Your Turn — Choose a target' : `⏳ ${store.opponentName ?? 'Opponent'}'s Turn`}
+      </div>
+
+      {/* Kill toast */}
+      <div className={`mb-3 px-5 py-2 rounded-lg font-bold text-sm bg-red-600/90 border border-red-400 text-white transition-all duration-300 ${
+        killToast ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+      }`}>
+        ✈ Plane Destroyed!
       </div>
 
       {store.errorMsg && (
@@ -57,6 +74,8 @@ export default function BattleScreen() {
         <Board
           cells={store.enemyBoard}
           label="Enemy Waters"
+          revealedCells={store.revealedEnemyCells}
+          lastAttack={store.lastAttack}
           onCellClick={store.isMyTurn && !waiting ? handleAttack : undefined}
           disabled={!store.isMyTurn || waiting}
         />
@@ -65,7 +84,7 @@ export default function BattleScreen() {
       <div className="mt-6 text-slate-500 text-xs flex gap-4">
         <span><span className="text-blue-300">○</span> Miss</span>
         <span><span className="text-orange-500">✕</span> Hit</span>
-        <span><span className="text-red-500">✕</span> Cockpit</span>
+        <span><span className="text-red-400">✈</span> Cockpit</span>
       </div>
     </div>
   );

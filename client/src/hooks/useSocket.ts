@@ -2,10 +2,9 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EVENTS, GamePhase, AttackResult } from '@battleplane/shared';
 import socket from '../socket';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, nextAttackKey } from '../store/gameStore';
 
 export function useSocket() {
-  const store = useGameStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +44,7 @@ export function useSocket() {
     });
 
     socket.on(EVENTS.BATTLE_RESULT, ({
-      attackerId, row, col, result, nextTurn, gameOver, winnerId,
+      attackerId, row, col, result, nextTurn, gameOver, winnerId, planeCells,
     }: {
       attackerId: string;
       row: number;
@@ -54,12 +53,20 @@ export function useSocket() {
       nextTurn: string;
       gameOver?: boolean;
       winnerId?: string;
+      planeCells?: [number, number][];
     }) => {
-      const { playerId, updateEnemyBoard, updateMyBoard, setIsMyTurn, setWinnerId } = useGameStore.getState();
+      const {
+        playerId, updateEnemyBoard, updateMyBoard,
+        setIsMyTurn, setWinnerId, revealEnemyPlane, setLastAttack,
+      } = useGameStore.getState();
       const cell = { attacked: true, result };
 
       if (attackerId === playerId) {
         updateEnemyBoard(row, col, cell);
+        setLastAttack({ row, col, result, key: nextAttackKey() });
+        if (result === AttackResult.KILL && planeCells) {
+          revealEnemyPlane(planeCells);
+        }
       } else {
         updateMyBoard(row, col, cell);
       }

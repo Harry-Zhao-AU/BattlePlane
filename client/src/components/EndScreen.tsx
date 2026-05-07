@@ -1,7 +1,5 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { EVENTS } from '@battleplane/shared';
-import socket from '../socket';
 import { useNavigate } from 'react-router-dom';
 
 export default function EndScreen() {
@@ -17,7 +15,9 @@ export default function EndScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-10 w-full max-w-sm text-center shadow-xl">
-        <div className="text-6xl mb-4">{iWon ? '🏆' : '💀'}</div>
+        <div className={`text-7xl mb-4 inline-block ${iWon ? 'animate-enter-win' : 'animate-enter-lose'}`}>
+          {iWon ? '🏆' : '💀'}
+        </div>
         <h2 className={`text-3xl font-bold mb-2 ${iWon ? 'text-cyan-400' : 'text-slate-400'}`}>
           {iWon ? 'You Win!' : 'You Lose'}
         </h2>

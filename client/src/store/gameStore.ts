@@ -1,10 +1,17 @@
 import { create } from 'zustand';
-import { CellState, GamePhase, PlaneDefinition } from '@battleplane/shared';
+import { AttackResult, CellState, GamePhase, PlaneDefinition } from '@battleplane/shared';
 
 function emptyBoard(): CellState[][] {
   return Array.from({ length: 10 }, () =>
     Array.from({ length: 10 }, () => ({ attacked: false }))
   );
+}
+
+export interface LastAttack {
+  row: number;
+  col: number;
+  result: AttackResult;
+  key: number;
 }
 
 interface GameStore {
@@ -19,6 +26,8 @@ interface GameStore {
   isMyTurn: boolean;
   winnerId: string | null;
   errorMsg: string | null;
+  revealedEnemyCells: Set<string>;
+  lastAttack: LastAttack | null;
 
   setRoomId: (id: string) => void;
   setPlayerId: (id: string) => void;
@@ -31,8 +40,12 @@ interface GameStore {
   updateEnemyBoard: (row: number, col: number, cell: CellState) => void;
   setWinnerId: (id: string) => void;
   setErrorMsg: (msg: string | null) => void;
+  revealEnemyPlane: (cells: [number, number][]) => void;
+  setLastAttack: (v: LastAttack) => void;
   reset: () => void;
 }
+
+let attackCounter = 0;
 
 export const useGameStore = create<GameStore>((set, get) => ({
   roomId: null,
@@ -46,6 +59,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isMyTurn: false,
   winnerId: null,
   errorMsg: null,
+  revealedEnemyCells: new Set(),
+  lastAttack: null,
 
   setRoomId: (id) => set({ roomId: id }),
   setPlayerId: (id) => set({ playerId: id }),
@@ -70,16 +85,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setWinnerId: (id) => set({ winnerId: id }),
   setErrorMsg: (msg) => set({ errorMsg: msg }),
 
-  reset: () => set({
-    roomId: null,
-    playerId: null,
-    phase: null,
-    opponentName: null,
-    myPlanes: [],
-    myBoard: emptyBoard(),
-    enemyBoard: emptyBoard(),
-    isMyTurn: false,
-    winnerId: null,
-    errorMsg: null,
-  }),
+  revealEnemyPlane: (cells) => {
+    const prev = get().revealedEnemyCells;
+    const next = new Set(prev);
+    cells.forEach(([r, c]) => next.add(`${r},${c}`));
+    set({ revealedEnemyCells: next });
+  },
+
+  setLastAttack: (v) => set({ lastAttack: v }),
+
+  reset: () => {
+    attackCounter = 0;
+    set({
+      roomId: null,
+      playerId: null,
+      phase: null,
+      opponentName: null,
+      myPlanes: [],
+      myBoard: emptyBoard(),
+      enemyBoard: emptyBoard(),
+      isMyTurn: false,
+      winnerId: null,
+      errorMsg: null,
+      revealedEnemyCells: new Set(),
+      lastAttack: null,
+    });
+  },
 }));
+
+export function nextAttackKey(): number {
+  return ++attackCounter;
+}

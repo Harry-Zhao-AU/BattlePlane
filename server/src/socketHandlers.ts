@@ -65,6 +65,7 @@ export function registerSocketHandlers(io: Server): void {
         nextTurn: outcome.nextTurn,
         gameOver: outcome.gameOver,
         winnerId: outcome.winnerId,
+        planeCells: outcome.planeCells,
       });
       if (outcome.gameOver) {
         io.to(room.roomId).emit(EVENTS.GAME_PHASE_CHANGE, { phase: GamePhase.ENDED });
