@@ -6,6 +6,7 @@ import {
   buildInitialBoard,
   validatePlanes,
   resolveAttack,
+  resetPlayerForRematch,
 } from './gameEngine';
 import { AttackResult, computePlaneCells } from '@battleplane/shared';
 
@@ -30,6 +31,7 @@ function makePlayer(socketId: string, playerName: string): PlayerState {
     boardReceived: buildInitialBoard(),
     planesAlive: 3,
     ready: false,
+    rematchReady: false,
   };
 }
 
@@ -150,6 +152,28 @@ export function processAttack(
 
   room.currentTurn = defender.playerId;
   return { result, gameOver: false, nextTurn: defender.playerId, planeCells };
+}
+
+export function requestRematch(
+  roomId: RoomId,
+  playerId: PlayerId
+): { bothReady: boolean } | { error: string } {
+  const room = rooms.get(roomId);
+  if (!room || room.phase !== GamePhase.ENDED) return { error: 'Game not ended' };
+
+  const player = getPlayerInRoom(room, playerId);
+  if (!player) return { error: 'Player not in room' };
+
+  player.rematchReady = true;
+  const bothReady = room.players.every(p => p?.rematchReady === true);
+
+  if (bothReady) {
+    room.players.forEach(p => p && resetPlayerForRematch(p));
+    room.phase = GamePhase.PLACING;
+    room.currentTurn = null;
+  }
+
+  return { bothReady };
 }
 
 export function removePlayer(socketId: string): { room: RoomState; opponent: PlayerState | null } | null {

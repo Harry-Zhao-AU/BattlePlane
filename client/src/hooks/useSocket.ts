@@ -78,6 +78,10 @@ export function useSocket() {
       }
     });
 
+    socket.on(EVENTS.GAME_REMATCH_START, () => {
+      useGameStore.getState().resetForRematch();
+    });
+
     socket.on(EVENTS.ERROR, ({ message }: { message: string }) => {
       useGameStore.getState().setErrorMsg(message);
     });
@@ -91,6 +95,7 @@ export function useSocket() {
       socket.off(EVENTS.PLACEMENT_ACK);
       socket.off(EVENTS.GAME_BOTH_READY);
       socket.off(EVENTS.BATTLE_RESULT);
+      socket.off(EVENTS.GAME_REMATCH_START);
       socket.off(EVENTS.ERROR);
     };
   }, []);

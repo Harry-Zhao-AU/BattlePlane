@@ -4,6 +4,7 @@ export const EVENTS = {
   ROOM_JOIN: 'room:join',
   PLACEMENT_SUBMIT: 'placement:submit',
   BATTLE_ATTACK: 'battle:attack',
+  ROOM_REMATCH: 'room:rematch',
 
   // Server → Client
   ROOM_CREATED: 'room:created',
@@ -14,5 +15,7 @@ export const EVENTS = {
   PLACEMENT_ACK: 'placement:ack',
   GAME_BOTH_READY: 'game:both_ready',
   BATTLE_RESULT: 'battle:result',
+  GAME_REMATCH_START: 'game:rematch_start',
+  ROOM_REMATCH_WAITING: 'room:rematch_waiting',
   ERROR: 'error',
 } as const;

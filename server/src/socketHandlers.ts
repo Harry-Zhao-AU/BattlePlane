@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { EVENTS, GamePhase, PlaneDefinition } from '@battleplane/shared';
 import * as rm from './roomManager';
 
+
 export function registerSocketHandlers(io: Server): void {
   io.on('connection', (socket: Socket) => {
     socket.on(EVENTS.ROOM_CREATE, ({ playerName }: { playerName: string }) => {
@@ -69,6 +70,26 @@ export function registerSocketHandlers(io: Server): void {
       });
       if (outcome.gameOver) {
         io.to(room.roomId).emit(EVENTS.GAME_PHASE_CHANGE, { phase: GamePhase.ENDED });
+      }
+    });
+
+    socket.on(EVENTS.ROOM_REMATCH, () => {
+      const room = rm.findRoomBySocketId(socket.id);
+      if (!room) return;
+
+      const outcome = rm.requestRematch(room.roomId, socket.id);
+      if ('error' in outcome) {
+        socket.emit(EVENTS.ERROR, { code: 'REMATCH_FAILED', message: outcome.error });
+        return;
+      }
+
+      if (outcome.bothReady) {
+        io.to(room.roomId).emit(EVENTS.GAME_REMATCH_START, {});
+        io.to(room.roomId).emit(EVENTS.GAME_PHASE_CHANGE, { phase: GamePhase.PLACING });
+      } else {
+        // Notify this player they're waiting, notify opponent they can rematch
+        socket.emit(EVENTS.ROOM_REMATCH_WAITING, {});
+        socket.to(room.roomId).emit(EVENTS.ROOM_REMATCH_WAITING, { opponentWantsRematch: true });
       }
     });
 

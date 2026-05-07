@@ -42,6 +42,7 @@ interface GameStore {
   setErrorMsg: (msg: string | null) => void;
   revealEnemyPlane: (cells: [number, number][]) => void;
   setLastAttack: (v: LastAttack) => void;
+  resetForRematch: () => void;
   reset: () => void;
 }
 
@@ -93,6 +94,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setLastAttack: (v) => set({ lastAttack: v }),
+
+  resetForRematch: () => {
+    attackCounter = 0;
+    set({
+      myPlanes: [],
+      myBoard: emptyBoard(),
+      enemyBoard: emptyBoard(),
+      isMyTurn: false,
+      winnerId: null,
+      errorMsg: null,
+      revealedEnemyCells: new Set(),
+      lastAttack: null,
+    });
+  },
 
   reset: () => {
     attackCounter = 0;

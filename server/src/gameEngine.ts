@@ -11,6 +11,17 @@ export interface PlayerState {
   boardReceived: CellState[][];
   planesAlive: number;
   ready: boolean;
+  rematchReady: boolean;
+}
+
+export function resetPlayerForRematch(player: PlayerState): void {
+  player.planes = [];
+  player.occupiedCells = new Set();
+  player.cockpitCells = new Map();
+  player.boardReceived = buildInitialBoard();
+  player.planesAlive = 3;
+  player.ready = false;
+  player.rematchReady = false;
 }
 
 export interface ValidationResult {
